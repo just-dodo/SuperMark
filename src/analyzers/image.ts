@@ -22,6 +22,7 @@ interface LlmAnalysisJson {
   contentAnalysis?: string;
   keyDetails?: string[];
   aiContext?: string;
+  extractedText?: string;
 }
 
 function getMimeType(filePath: string): string {
@@ -112,7 +113,8 @@ export async function analyzeImage(
 - "summary": One paragraph describing what this image shows
 - "contentAnalysis": Detailed visual description covering elements, layout, colors, text if any, and overall composition
 - "keyDetails": Array of strings describing notable aspects (style, purpose, technical details, text content)
-- "aiContext": A concise AI-friendly description optimized for downstream consumption${svgContext}`;
+- "aiContext": A concise AI-friendly description optimized for downstream consumption
+- "extractedText": If the image contains any readable text (signs, documents, labels, UI, handwriting, etc.), extract ALL of it verbatim. If no text is found, use an empty string.${svgContext}`;
 
   const systemPrompt =
     "You are an image analysis expert. Analyze images thoroughly and respond only with valid JSON, never with markdown code fences or extra text.";
@@ -149,6 +151,7 @@ export async function analyzeImage(
     contentAnalysis: parsed.contentAnalysis ?? "",
     keyDetails: Array.isArray(parsed.keyDetails) ? parsed.keyDetails : [],
     aiContext: parsed.aiContext ?? "",
+    rawContent: parsed.extractedText || undefined,
     metadata: {
       format: mimeType,
       width: sharpMeta?.width,
