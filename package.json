@@ -1,6 +1,6 @@
 {
   "name": "@justdodo/supermark",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "AI-powered file digestion system — auto-generates markdown documentation for every file",
   "type": "module",
   "bin": {

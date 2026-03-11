@@ -5,8 +5,15 @@
  */
 
 import { Command } from "commander";
-import { existsSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync as readFileSyncFs, statSync, writeFileSync } from "node:fs";
 import { join, basename } from "node:path";
+import { fileURLToPath } from "node:url";
+import { dirname as dirnamePath } from "node:path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirnamePath(__filename);
+const pkg = JSON.parse(readFileSyncFs(join(__dirname, "..", "..", "package.json"), "utf-8")) as { version: string };
+
 import { loadConfig } from "../config/index.js";
 import { startWatcher, stopWatcher } from "../watcher/index.js";
 import { createQueue, enqueue } from "../queue/index.js";
@@ -53,7 +60,7 @@ const program = new Command();
 program
   .name("supermark")
   .description("AI-powered file digestion system — auto-generates markdown documentation for every file")
-  .version("0.1.1")
+  .version(pkg.version)
   .action(() => {
     showWelcome();
   });
