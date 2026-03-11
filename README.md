@@ -27,6 +27,63 @@ User drops file into SuperMark folder
 | **Data** | CSV, JSON, YAML | Schema, sample records, statistics |
 | **URLs** | .url, .webloc files | Web page content, metadata, YouTube transcripts |
 
+## Install
+
+```bash
+# Clone the repo
+git clone https://github.com/your-username/supermark.git
+cd supermark
+
+# Install dependencies
+npm install
+
+# Build
+npm run build
+
+# (Optional) Link globally
+npm link
+```
+
+### Prerequisites
+
+- **Node.js** >= 18
+- **ffmpeg/ffprobe** — for audio/video metadata (`brew install ffmpeg` on macOS)
+- **API keys** (set as environment variables):
+  - `OPENAI_API_KEY` — required for LLM analysis and Whisper transcription
+  - `GEMINI_API_KEY` — required for video understanding
+
+## Quick Start
+
+```bash
+# 1. Set your API key
+export OPENAI_API_KEY="sk-..."
+
+# 2. Initialize a SuperMark project (creates config + directories)
+supermark init
+
+# 3. Start watching
+supermark watch
+
+# 4. Drop files into ./inbox — digests appear in ./digests
+cp my-report.pdf ./inbox/
+# => ./digests/my-report.pdf.md created automatically
+
+# Or digest a single file directly
+supermark digest ./some-file.py
+
+# Or digest a URL
+supermark digest https://example.com/article
+```
+
+### CLI Commands
+
+| Command | Description |
+|---------|-------------|
+| `supermark init` | Create default config, inbox, and digests directories |
+| `supermark watch` | Start watching for new/changed files |
+| `supermark digest <file\|url>` | Digest a single file or URL |
+| `supermark status` | Show current configuration and status |
+
 ## Digest Format
 
 Each digested file produces a companion `.md` file:
