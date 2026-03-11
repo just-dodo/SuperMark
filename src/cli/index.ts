@@ -5,7 +5,7 @@
  */
 
 import { Command } from "commander";
-import { readdirSync, statSync } from "node:fs";
+import { existsSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { loadConfig } from "../config/index.js";
 import { startWatcher, stopWatcher } from "../watcher/index.js";
@@ -26,14 +26,14 @@ program
   .command("watch")
   .description("Watch a directory and auto-generate digests for new files")
   .option("-c, --config <path>", "Path to config file")
-  .option("-d, --daemon", "Run in background as a daemon process")
-  .action(async (options: { config?: string; daemon?: boolean }) => {
-    if (options.daemon) {
+  .option("-f, --foreground", "Run in foreground instead of as a daemon")
+  .action(async (options: { config?: string; foreground?: boolean }) => {
+    if (!options.foreground) {
       const { spawn } = await import("node:child_process");
       const { writeFileSync } = await import("node:fs");
 
       // Re-run the same command without --daemon
-      const args = process.argv.slice(1).filter(a => a !== "--daemon" && a !== "-d");
+      const args = [...process.argv.slice(1), "--foreground"];
       const child = spawn(process.argv[0], args, {
         detached: true,
         stdio: "ignore",
@@ -47,9 +47,22 @@ program
       process.exit(0);
     }
 
+    // Auto-init: create config if it doesn't exist
+    const configPath = options.config || "supermark.config.json";
+    if (!existsSync(configPath)) {
+      const { DEFAULT_CONFIG } = await import("../config/index.js");
+      writeFileSync(configPath, JSON.stringify(DEFAULT_CONFIG, null, 2) + "\n");
+      console.log("No config found — initialized supermark.config.json");
+    }
+
     const config = loadConfig(options.config);
     const queue = createQueue(config);
     const tracker = new DigestTracker(config.outputDir);
+
+    // Safety filter: never process .md files (digests live alongside sources)
+    const shouldIgnore = (filePath: string): boolean => {
+      return filePath.endsWith(".md");
+    };
 
     console.log(`Watching ${config.watchDir} for new files...`);
 
@@ -67,10 +80,12 @@ program
 
     const watcher = startWatcher(config, {
       onFileAdded: (filePath) => {
+        if (shouldIgnore(filePath)) return;
         console.log(`New file detected: ${filePath}`);
         void enqueue(queue, { filePath, addedAt: new Date() }, () => digestFile(filePath));
       },
       onFileChanged: (filePath) => {
+        if (shouldIgnore(filePath)) return;
         console.log(`File changed: ${filePath}`);
         void enqueue(queue, { filePath, addedAt: new Date() }, () => digestFile(filePath));
       },

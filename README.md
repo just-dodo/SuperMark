@@ -61,17 +61,17 @@ export OPENAI_API_KEY="sk-..."
 # 2. Initialize a SuperMark project (creates config in current directory)
 supermark init
 
-# 3. Start watching the current directory
+# 3. Start watching (runs as daemon by default)
 supermark watch
+# => SuperMark daemon started (PID: 12345)
+# => Stop with: supermark stop
 
 # 4. Drop files in — digests appear alongside them as <filename>.md
 cp my-report.pdf .
 # => ./my-report.pdf.md created automatically
 
-# Or run as a background daemon
-supermark watch --daemon
-# => SuperMark daemon started (PID: 12345)
-# => Stop with: supermark stop
+# Or run in foreground (for debugging)
+supermark watch --foreground
 
 # Or digest a single file directly
 supermark digest ./some-file.py
@@ -85,8 +85,8 @@ supermark digest https://example.com/article
 | Command | Description |
 |---------|-------------|
 | `supermark init` | Create default config in the current directory |
-| `supermark watch` | Start watching for new/changed files |
-| `supermark watch -d` | Start watcher as a background daemon |
+| `supermark watch` | Start watching as a background daemon |
+| `supermark watch -f` | Run watcher in foreground |
 | `supermark stop` | Stop the background daemon |
 | `supermark digest <file\|url>` | Digest a single file or URL |
 | `supermark status` | Show current configuration and status |
