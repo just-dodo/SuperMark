@@ -271,7 +271,7 @@ program
       }
       const { createHash } = await import("node:crypto");
       const hash = createHash("sha256").update(file).digest("hex");
-      const outputPath = writeDigest({ filePath: join(config.outputDir, urlName), result, config, sourceHash: hash });
+      const outputPath = writeDigest({ filePath: join(config.outputDir, urlName), result, config, sourceHash: hash, sourcePath: file });
       tracker.track(file, hash, outputPath);
       console.log(`Digest written: ${outputPath}`);
     } else {
@@ -384,6 +384,8 @@ program
 const DEFAULT_DIGEST_TEMPLATE = `# {{fileName}}
 
 > Auto-generated digest — {{digestedAt}}
+
+- **Source**: {{sourcePath}}
 
 ## Summary
 

@@ -54,17 +54,37 @@ export interface DigestOptions {
   result: AnalysisResult;
   config: Config;
   sourceHash?: string;
+  /** Original source path or URL (shown in digest) */
+  sourcePath?: string;
+}
+
+function ensureString(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (value === null || value === undefined) return "";
+  return JSON.stringify(value, null, 2);
 }
 
 export function generateDigest(options: DigestOptions): string {
-  const { filePath, result, sourceHash } = options;
+  const { filePath, result, sourceHash, sourcePath } = options;
   const fileName = basename(filePath);
   const now = new Date().toISOString();
-  const fileInfo = getFileInfo(filePath);
-  const fileType = extensionToType[fileInfo.extension] || fileInfo.extension || "Unknown";
-  const formattedSize = formatFileSize(fileInfo.sizeBytes);
-  const modifiedDate = fileInfo.modifiedAt.toISOString();
-  const hash = sourceHash ?? getFileHash(filePath);
+
+  let fileType = "Unknown";
+  let formattedSize = "N/A";
+  let modifiedDate = now;
+  let hash = sourceHash ?? "";
+
+  try {
+    const fileInfo = getFileInfo(filePath);
+    fileType = extensionToType[fileInfo.extension] || fileInfo.extension || "Unknown";
+    formattedSize = formatFileSize(fileInfo.sizeBytes);
+    modifiedDate = fileInfo.modifiedAt.toISOString();
+    if (!hash) hash = getFileHash(filePath);
+  } catch {
+    // File may not exist (e.g. URL digests) — use defaults
+    const ext = extname(filePath);
+    fileType = extensionToType[ext] || ext || "Unknown";
+  }
 
   const template = loadTemplate();
 
@@ -81,14 +101,15 @@ export function generateDigest(options: DigestOptions): string {
     const vars: Record<string, string> = {
       fileName,
       digestedAt: now,
-      summary: result.summary || "_No summary available._",
+      sourcePath: sourcePath || filePath,
+      summary: ensureString(result.summary) || "_No summary available._",
       fileType,
       fileSize: formattedSize,
       modifiedAt: modifiedDate,
       hash,
-      contentAnalysis: result.contentAnalysis || "_No content analysis available._",
+      contentAnalysis: ensureString(result.contentAnalysis) || "_No content analysis available._",
       keyDetails: keyDetailsStr,
-      aiContext: result.aiContext || "",
+      aiContext: ensureString(result.aiContext) || "",
       metadata: metadataStr,
       rawContent: result.rawContent ? "```\n" + result.rawContent + "\n```" : "",
     };
@@ -102,9 +123,11 @@ export function generateDigest(options: DigestOptions): string {
     "",
     `> Auto-generated digest — ${now}`,
     "",
+    `- **Source**: ${sourcePath || filePath}`,
+    "",
     "## Summary",
     "",
-    result.summary || "_No summary available._",
+    ensureString(result.summary) || "_No summary available._",
     "",
     "## File Info",
     "",
@@ -116,7 +139,7 @@ export function generateDigest(options: DigestOptions): string {
     "",
     "## Content Analysis",
     "",
-    result.contentAnalysis || "_No content analysis available._",
+    ensureString(result.contentAnalysis) || "_No content analysis available._",
     "",
   ];
 

@@ -2,6 +2,8 @@
 
 > Auto-generated digest — {{digestedAt}}
 
+- **Source**: {{sourcePath}}
+
 ## Summary
 
 {{summary}}
