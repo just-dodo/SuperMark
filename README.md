@@ -1,5 +1,7 @@
 # SuperMark
 
+[![npm version](https://img.shields.io/npm/v/@justdodo/supermark)](https://www.npmjs.com/package/@justdodo/supermark)
+
 A file digestion system that automatically generates AI-friendly markdown documentation for every file placed into a watched directory.
 
 Drop a file in → get a structured markdown summary out.
@@ -30,18 +32,7 @@ User drops file into SuperMark folder
 ## Install
 
 ```bash
-# Clone the repo
-git clone https://github.com/your-username/supermark.git
-cd supermark
-
-# Install dependencies
-npm install
-
-# Build
-npm run build
-
-# (Optional) Link globally
-npm link
+npm install -g @justdodo/supermark
 ```
 
 ### Prerequisites
@@ -58,15 +49,12 @@ npm link
 # 1. Set your API key
 export OPENAI_API_KEY="sk-..."
 
-# 2. Initialize a SuperMark project (creates config in current directory)
-supermark init
-
-# 3. Start watching (runs as daemon by default)
+# 2. Start watching (auto-creates config on first run, runs as daemon)
 supermark watch
 # => SuperMark daemon started (PID: 12345)
 # => Stop with: supermark stop
 
-# 4. Drop files in — digests appear alongside them as <filename>.md
+# 3. Drop files in — digests appear alongside them as <filename>.md
 cp my-report.pdf .
 # => ./my-report.pdf.md created automatically
 
@@ -84,11 +72,11 @@ supermark digest https://example.com/article
 
 | Command | Description |
 |---------|-------------|
-| `supermark init` | Create default config in the current directory |
-| `supermark watch` | Start watching as a background daemon |
+| `supermark watch` | Start watching as a background daemon (auto-inits if needed) |
 | `supermark watch -f` | Run watcher in foreground |
 | `supermark stop` | Stop the background daemon |
 | `supermark digest <file\|url>` | Digest a single file or URL |
+| `supermark init` | Manually create default config |
 | `supermark status` | Show current configuration and status |
 
 ## Digest Format
@@ -104,7 +92,8 @@ One-paragraph description of what this file is and does.
 ## File Info
 - **Type**: detected file type
 - **Size**: file size
-- **Created**: timestamp
+- **Hash**: SHA-256 hash
+- **Modified**: last modified date
 - **Digested**: digest timestamp
 
 ## Content Analysis
@@ -117,33 +106,23 @@ Notable aspects, dependencies, relationships to other files.
 Concise description optimized for AI consumption.
 ```
 
-## Usage
-
-```bash
-# Start watching a directory
-supermark watch ./my-files
-
-# Digest a single file
-supermark digest ./report.pdf
-
-# Digest a URL
-supermark digest https://example.com/article
-```
-
 ## Configuration
 
-Create a `supermark.config.json` in your project root:
+A `supermark.config.json` is auto-created on first `supermark watch`. You can also create it manually:
 
 ```json
 {
-  "watchDir": "./input",
-  "outputDir": "./digests",
+  "watchDir": ".",
+  "outputDir": ".",
   "recursive": true,
-  "include": ["*"],
-  "exclude": ["*.tmp", "*.lock"],
+  "concurrency": 3,
+  "debounceMs": 1000,
+  "ignore": ["*.tmp", ".DS_Store", "**/*.md"],
+  "cleanupDigests": true,
   "ai": {
     "provider": "openai",
-    "model": "gpt-4o"
+    "model": "gpt-4o",
+    "whisperModel": "whisper-1"
   }
 }
 ```
@@ -152,23 +131,26 @@ Create a `supermark.config.json` in your project root:
 
 | Setting | Description | Default |
 |---------|-------------|---------|
-| `watchDir` | Directory to watch for new files | `./input` |
-| `outputDir` | Where to save digests | Same as watchDir |
+| `watchDir` | Directory to watch for new files | `.` |
+| `outputDir` | Where to save digests | `.` |
 | `recursive` | Watch subdirectories | `true` |
-| `include` | File patterns to include | `["*"]` |
-| `exclude` | File patterns to exclude | `[]` |
-| `ai.provider` | AI provider (openai, anthropic, etc.) | — |
-| `ai.model` | Model for digestion | — |
+| `concurrency` | Max parallel digestions | `3` |
+| `debounceMs` | Wait time before processing (ms) | `1000` |
+| `ignore` | File patterns to ignore | `["*.tmp", ".DS_Store", "**/*.md"]` |
+| `cleanupDigests` | Delete digest when source is removed | `true` |
+| `ai.provider` | AI provider | `"openai"` |
+| `ai.model` | LLM model for analysis | `"gpt-4o"` |
+| `ai.whisperModel` | Whisper model for transcription | `"whisper-1"` |
 
 ## Tech Stack
 
-- **Runtime**: Node.js / Bun
+- **Runtime**: Node.js
 - **File watching**: chokidar
-- **AI**: Configurable LLM API (OpenAI, Anthropic, local models)
-- **Speech-to-text**: Whisper API
-- **Video understanding**: Gemini API
-- **Document parsing**: pdf-parse, mammoth (DOCX), pptx-parser
+- **AI**: OpenAI (LLM + Whisper), Gemini (video)
+- **Document parsing**: pdf-parse, mammoth (DOCX)
+- **Web extraction**: Readability, cheerio
 - **Media probing**: ffprobe (via fluent-ffmpeg)
+- **Image metadata**: sharp
 - **CLI**: Commander.js
 
 ## License
