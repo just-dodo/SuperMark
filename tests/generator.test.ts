@@ -112,12 +112,10 @@ describe("generateDigest", () => {
 });
 
 describe("writeDigest", () => {
-  it("creates output directory if it doesn't exist", () => {
-    const uniqueDir = join(tmpdir(), `supermark-write-test-${Date.now()}`);
-    const config = { ...baseConfig, outputDir: uniqueDir };
-    writeDigest({ filePath: TEMP_FILE, result: baseResult, config });
-    expect(existsSync(uniqueDir)).toBe(true);
-    rmSync(uniqueDir, { recursive: true });
+  it("writes digest next to the source file", () => {
+    const outputPath = writeDigest({ filePath: TEMP_FILE, result: baseResult, config: baseConfig });
+    expect(outputPath).toBe(join(tmpdir(), "supermark-gen-test.txt.md"));
+    expect(existsSync(outputPath)).toBe(true);
   });
 
   it("writes file with .md extension appended to original filename", () => {

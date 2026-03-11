@@ -3,7 +3,7 @@
  */
 
 import { writeFileSync, mkdirSync, existsSync, unlinkSync, readFileSync } from "node:fs";
-import { join, basename, extname, resolve } from "node:path";
+import { join, basename, dirname, extname, resolve } from "node:path";
 import { getFileInfo, formatFileSize, getFileHash } from "../utils/file.js";
 import type { AnalysisResult, Config } from "../analyzers/types.js";
 
@@ -178,12 +178,14 @@ export function generateDigest(options: DigestOptions): string {
 
 export function writeDigest(options: DigestOptions): string {
   const markdown = generateDigest(options);
-  const { filePath, config } = options;
+  const { filePath } = options;
 
-  mkdirSync(config.outputDir, { recursive: true });
+  // Save digest next to the original file
+  const outputDir = dirname(filePath);
+  mkdirSync(outputDir, { recursive: true });
 
   const fileName = basename(filePath);
-  const outputPath = join(config.outputDir, `${fileName}.md`);
+  const outputPath = join(outputDir, `${fileName}.md`);
 
   writeFileSync(outputPath, markdown, "utf-8");
   return outputPath;

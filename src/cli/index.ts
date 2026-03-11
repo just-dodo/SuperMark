@@ -260,6 +260,7 @@ program
 
     if (isUrl) {
       const { analyzeUrl } = await import("../analyzers/url.js");
+      const { mkdirSync, writeFileSync } = await import("node:fs");
       const result = await analyzeUrl(file, config);
       // Use URL hostname + path as filename
       let urlName: string;
@@ -269,10 +270,17 @@ program
       } catch {
         urlName = "url-digest";
       }
+      // Save URL bookmark and digest in url/ directory
+      const urlDir = join(config.outputDir, "url");
+      mkdirSync(urlDir, { recursive: true });
+      const urlFilePath = join(urlDir, `${urlName}.url`);
+      writeFileSync(urlFilePath, `[InternetShortcut]\nURL=${file}\n`, "utf-8");
+
       const { createHash } = await import("node:crypto");
       const hash = createHash("sha256").update(file).digest("hex");
-      const outputPath = writeDigest({ filePath: join(config.outputDir, urlName), result, config, sourceHash: hash, sourcePath: file });
+      const outputPath = writeDigest({ filePath: urlFilePath, result, config, sourceHash: hash, sourcePath: file });
       tracker.track(file, hash, outputPath);
+      console.log(`URL saved: ${urlFilePath}`);
       console.log(`Digest written: ${outputPath}`);
     } else {
       const fileInfo = getFileInfo(file);
