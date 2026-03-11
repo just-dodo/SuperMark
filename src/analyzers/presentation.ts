@@ -138,6 +138,7 @@ ${content}
     contentAnalysis: parsed.contentAnalysis ?? "",
     keyDetails: Array.isArray(parsed.keyDetails) ? parsed.keyDetails : [],
     aiContext: parsed.aiContext ?? "",
+    rawContent: slidesText,
     metadata: {
       format: "PPTX",
       slideCount,

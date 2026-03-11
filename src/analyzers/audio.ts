@@ -143,6 +143,7 @@ ${transcriptionForLlm}
     contentAnalysis: parsed.contentAnalysis ?? "",
     keyDetails: Array.isArray(parsed.keyDetails) ? parsed.keyDetails : [],
     aiContext: parsed.aiContext ?? "",
+    rawContent: transcriptionText,
     metadata: {
       format,
       ...(duration !== undefined && { duration }),

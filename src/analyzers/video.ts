@@ -125,6 +125,7 @@ export async function analyzeVideo(
     contentAnalysis,
     keyDetails,
     aiContext,
+    rawContent: geminiResult.transcription || undefined,
     metadata: {
       format: ext,
       duration: mediaMeta.duration,

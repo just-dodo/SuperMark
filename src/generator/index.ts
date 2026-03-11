@@ -2,8 +2,8 @@
  * Markdown digest generator — converts analysis results to markdown files.
  */
 
-import { writeFileSync, mkdirSync, existsSync, unlinkSync } from "node:fs";
-import { join, basename, extname } from "node:path";
+import { writeFileSync, mkdirSync, existsSync, unlinkSync, readFileSync } from "node:fs";
+import { join, basename, extname, resolve } from "node:path";
 import { getFileInfo, formatFileSize, getFileHash } from "../utils/file.js";
 import type { AnalysisResult, Config } from "../analyzers/types.js";
 
@@ -23,6 +23,32 @@ const extensionToType: Record<string, string> = {
   ".url": "URL Bookmark", ".webloc": "URL Bookmark",
 };
 
+function loadTemplate(): string | null {
+  const templatePath = resolve("DIGEST_TEMPLATE.md");
+  if (existsSync(templatePath)) {
+    return readFileSync(templatePath, "utf-8");
+  }
+  return null;
+}
+
+function renderTemplate(template: string, vars: Record<string, string>): string {
+  let result = template;
+  for (const [key, value] of Object.entries(vars)) {
+    result = result.replaceAll(`{{${key}}}`, value);
+  }
+  // Split into sections at ## headings and remove empty ones
+  const parts = result.split(/(?=^## )/m);
+  const filtered = parts.filter((part) => {
+    if (!part.startsWith("## ")) return true;
+    const afterHeading = part.replace(/^## [^\n]+\n*/, "");
+    return afterHeading.trim().length > 0;
+  });
+  result = filtered.join("");
+  // Clean up multiple blank lines
+  result = result.replace(/\n{3,}/g, "\n\n");
+  return result.trimEnd() + "\n";
+}
+
 export interface DigestOptions {
   filePath: string;
   result: AnalysisResult;
@@ -40,6 +66,37 @@ export function generateDigest(options: DigestOptions): string {
   const modifiedDate = fileInfo.modifiedAt.toISOString();
   const hash = sourceHash ?? getFileHash(filePath);
 
+  const template = loadTemplate();
+
+  if (template !== null) {
+    const keyDetailsStr =
+      result.keyDetails.length > 0
+        ? result.keyDetails.map((d) => `- ${d}`).join("\n")
+        : "";
+    const metadataStr =
+      Object.keys(result.metadata).length > 0
+        ? "```json\n" + JSON.stringify(result.metadata, null, 2) + "\n```"
+        : "";
+
+    const vars: Record<string, string> = {
+      fileName,
+      digestedAt: now,
+      summary: result.summary || "_No summary available._",
+      fileType,
+      fileSize: formattedSize,
+      modifiedAt: modifiedDate,
+      hash,
+      contentAnalysis: result.contentAnalysis || "_No content analysis available._",
+      keyDetails: keyDetailsStr,
+      aiContext: result.aiContext || "",
+      metadata: metadataStr,
+      rawContent: result.rawContent ? "```\n" + result.rawContent + "\n```" : "",
+    };
+
+    return renderTemplate(template, vars);
+  }
+
+  // Fallback: hardcoded format
   const lines: string[] = [
     `# ${fileName}`,
     "",
@@ -81,6 +138,14 @@ export function generateDigest(options: DigestOptions): string {
     lines.push("## Metadata", "");
     lines.push("```json");
     lines.push(JSON.stringify(result.metadata, null, 2));
+    lines.push("```");
+    lines.push("");
+  }
+
+  if (result.rawContent) {
+    lines.push("## Original Content", "");
+    lines.push("```");
+    lines.push(result.rawContent);
     lines.push("```");
     lines.push("");
   }

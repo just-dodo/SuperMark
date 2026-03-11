@@ -13,6 +13,8 @@ export interface AnalysisResult {
   aiContext: string;
   /** Arbitrary metadata specific to the analyzer */
   metadata: Record<string, unknown>;
+  /** Original content (text, transcription, extracted text) — included in digest */
+  rawContent?: string;
 }
 
 export interface FileInfo {

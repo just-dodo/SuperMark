@@ -150,6 +150,7 @@ ${sampleData}
     contentAnalysis: parsed.contentAnalysis ?? "",
     keyDetails: parsed.keyDetails ?? [],
     aiContext: parsed.aiContext ?? "",
+    rawContent: content,
     metadata: {
       format: "csv",
       rowCount: rows.length,
@@ -250,6 +251,7 @@ ${sampleData}
     contentAnalysis: parsed.contentAnalysis ?? "",
     keyDetails: parsed.keyDetails ?? [],
     aiContext: parsed.aiContext ?? "",
+    rawContent: content,
     metadata: {
       format: "json",
       recordCount: Array.isArray(data) ? recordCount : undefined,
@@ -348,6 +350,7 @@ ${sampleData}
     contentAnalysis: parsed.contentAnalysis ?? "",
     keyDetails: parsed.keyDetails ?? [],
     aiContext: parsed.aiContext ?? "",
+    rawContent: content,
     metadata: {
       format: "yaml",
       topLevelKeys,
@@ -409,6 +412,7 @@ ${textContent}
     contentAnalysis: parsed.contentAnalysis ?? "",
     keyDetails: parsed.keyDetails ?? [],
     aiContext: parsed.aiContext ?? "",
+    rawContent: content,
     metadata: {
       format: "xml",
       rootElement,
@@ -441,6 +445,7 @@ export async function analyzeData(
         contentAnalysis: "File format is not recognized as a data file.",
         keyDetails: [`File extension: ${ext}`],
         aiContext: `Data file at ${filePath} with unrecognized format.`,
+        rawContent: content,
         metadata: { format: "unknown", extension: ext },
       };
   }

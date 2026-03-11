@@ -215,6 +215,7 @@ async function analyzeWebPage(
       ? parsed.keyDetails
       : [],
     aiContext: parsed.aiContext ?? "",
+    rawContent: articleText || undefined,
     metadata: {
       url,
       title,
@@ -312,6 +313,7 @@ async function analyzeYouTube(
       ? parsed.keyDetails
       : [],
     aiContext: parsed.aiContext ?? "",
+    rawContent: contentForLlm || undefined,
     metadata: { url, videoId, title, channel, ogImage, type: "youtube" },
   };
 }

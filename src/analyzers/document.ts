@@ -112,6 +112,7 @@ ${content}
     contentAnalysis: parsed.contentAnalysis ?? "",
     keyDetails: Array.isArray(parsed.keyDetails) ? parsed.keyDetails : [],
     aiContext: parsed.aiContext ?? "",
+    rawContent: extractedText || undefined,
     metadata: {
       format,
       ...(pageCount !== undefined ? { pageCount } : {}),

@@ -6,7 +6,7 @@
 
 import { Command } from "commander";
 import { existsSync, readdirSync, statSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, basename } from "node:path";
 import { loadConfig } from "../config/index.js";
 import { startWatcher, stopWatcher } from "../watcher/index.js";
 import { createQueue, enqueue } from "../queue/index.js";
@@ -95,9 +95,24 @@ program
     const queue = createQueue(config);
     const tracker = new DigestTracker(config.outputDir);
 
-    // Safety filter: never process .md files (digests live alongside sources)
+    // Safety filter: never process supermark state/config/digest files
+    const IGNORE_FILES = new Set([
+      "supermark.config.json",
+      ".supermark.pid",
+      ".supermark-tracker.json",
+      "package.json",
+      "package-lock.json",
+      "tsconfig.json",
+      "DIGEST_TEMPLATE.md",
+    ]);
+
     const shouldIgnore = (filePath: string): boolean => {
-      return filePath.endsWith(".md");
+      const name = basename(filePath);
+      if (name.endsWith(".md")) return true;
+      if (name.startsWith(".")) return true;
+      if (IGNORE_FILES.has(name)) return true;
+      if (filePath.includes("node_modules")) return true;
+      return false;
     };
 
     console.log(`Watching ${config.watchDir} for new files...`);
@@ -147,10 +162,8 @@ program
           }
           for (const entry of entries) {
             const fullPath = join(dir, entry);
-            // Skip hidden files/dirs
-            if (entry.startsWith(".")) continue;
-            // Skip .md files (digests live in same dir as sources)
-            if (entry.endsWith(".md")) continue;
+            // Use the same shouldIgnore filter as the watcher callbacks
+            if (shouldIgnore(fullPath)) continue;
             // Skip ignore patterns (basic glob check)
             const ignored = config.ignore.some((pattern) => {
               // Simple wildcard match for *.ext patterns
@@ -232,14 +245,57 @@ program
     console.log(`Digest written: ${outputPath}`);
   });
 
+const DEFAULT_DIGEST_TEMPLATE = `# {{fileName}}
+
+> Auto-generated digest — {{digestedAt}}
+
+## Summary
+
+{{summary}}
+
+## File Info
+
+- **Type**: {{fileType}}
+- **Size**: {{fileSize}}
+- **Modified**: {{modifiedAt}}
+- **Digested**: {{digestedAt}}
+- **Hash**: {{hash}}
+
+## Content Analysis
+
+{{contentAnalysis}}
+
+## Key Details
+
+{{keyDetails}}
+
+## AI Context
+
+{{aiContext}}
+
+## Metadata
+
+{{metadata}}
+
+## Original Content
+
+{{rawContent}}
+`;
+
 program
   .command("init")
   .description("Initialize a supermark project with default config")
   .action(async () => {
-    const { writeFileSync } = await import("node:fs");
+    const { writeFileSync, existsSync } = await import("node:fs");
     const { DEFAULT_CONFIG } = await import("../config/index.js");
 
     writeFileSync("supermark.config.json", JSON.stringify(DEFAULT_CONFIG, null, 2) + "\n");
+
+    if (!existsSync("DIGEST_TEMPLATE.md")) {
+      writeFileSync("DIGEST_TEMPLATE.md", DEFAULT_DIGEST_TEMPLATE);
+      console.log("  Template: DIGEST_TEMPLATE.md");
+    }
+
     console.log("Initialized supermark project.");
     console.log(`  Config: supermark.config.json`);
     console.log(`  Watch dir: ${DEFAULT_CONFIG.watchDir}`);
