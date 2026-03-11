@@ -6,23 +6,44 @@
   "bin": {
     "supermark": "./dist/cli/index.js"
   },
+  "files": [
+    "dist",
+    "supermark.config.json",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
     "start": "node dist/cli/index.js",
     "clean": "rm -rf dist",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run clean && npm run build"
   },
   "engines": {
     "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/just-dodo/SuperMark.git"
+  },
+  "homepage": "https://github.com/just-dodo/SuperMark",
+  "bugs": {
+    "url": "https://github.com/just-dodo/SuperMark/issues"
   },
   "keywords": [
     "markdown",
     "ai",
     "documentation",
     "file-watcher",
-    "digest"
+    "digest",
+    "llm",
+    "openai",
+    "gemini",
+    "transcription",
+    "pdf",
+    "video"
   ],
   "license": "MIT",
   "dependencies": {
