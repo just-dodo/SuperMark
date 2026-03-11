@@ -1,6 +1,6 @@
 {
   "name": "@justdodo/supermark",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "AI-powered file digestion system — auto-generates markdown documentation for every file",
   "type": "module",
   "bin": {
@@ -8,11 +8,13 @@
   },
   "files": [
     "dist",
+    "scripts",
     "supermark.config.json",
     "README.md",
     "LICENSE"
   ],
   "scripts": {
+    "postinstall": "node scripts/postinstall.js",
     "build": "tsc",
     "dev": "tsc --watch",
     "start": "node dist/cli/index.js",

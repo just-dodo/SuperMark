@@ -38,34 +38,61 @@ npm install -g @justdodo/supermark
 ### Prerequisites
 
 - **Node.js** >= 18
-- **ffmpeg/ffprobe** — for audio/video metadata (`brew install ffmpeg` on macOS)
-- **API keys** (set as environment variables):
-  - `OPENAI_API_KEY` — required for LLM analysis and Whisper transcription
-  - `GEMINI_API_KEY` — required for video understanding
+- **ffmpeg/ffprobe** — needed for audio/video files (`brew install ffmpeg` on macOS)
+
+### API Keys Setup
+
+SuperMark needs at least an OpenAI API key. Set them as environment variables:
+
+```bash
+# Required — used for LLM analysis and Whisper audio transcription
+export OPENAI_API_KEY="sk-..."
+
+# Optional — used for video understanding (Gemini can process video natively)
+export GEMINI_API_KEY="AI..."
+```
+
+**Get your keys:**
+- OpenAI: https://platform.openai.com/api-keys
+- Gemini: https://aistudio.google.com/apikey
+
+**To persist them**, add to your shell profile (`~/.zshrc` or `~/.bashrc`):
+
+```bash
+echo 'export OPENAI_API_KEY="sk-..."' >> ~/.zshrc
+echo 'export GEMINI_API_KEY="AI..."' >> ~/.zshrc
+source ~/.zshrc
+```
 
 ## Quick Start
 
+After install and API key setup, you're ready to go:
+
 ```bash
-# 1. Set your API key
-export OPENAI_API_KEY="sk-..."
+# 1. Navigate to any directory you want to digest
+cd ~/my-project
 
 # 2. Start watching (auto-creates config on first run, runs as daemon)
 supermark watch
+# => No config found — initialized supermark.config.json
 # => SuperMark daemon started (PID: 12345)
 # => Stop with: supermark stop
 
-# 3. Drop files in — digests appear alongside them as <filename>.md
-cp my-report.pdf .
-# => ./my-report.pdf.md created automatically
+# 3. That's it! Drop files in — digests appear alongside them
+cp ~/Downloads/report.pdf .
+# => ./report.pdf.md created automatically
 
-# Or run in foreground (for debugging)
-supermark watch --foreground
-
-# Or digest a single file directly
+# Digest a single file without watching
 supermark digest ./some-file.py
 
-# Or digest a URL
+# Digest a URL
 supermark digest https://example.com/article
+
+# Run in foreground to see logs (useful for debugging)
+supermark watch --foreground
+
+# Stop the daemon
+supermark stop
 ```
 
 ### CLI Commands
