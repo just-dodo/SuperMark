@@ -12,7 +12,7 @@ const DEFAULT_CONFIG: Config = {
   recursive: true,
   concurrency: 3,
   debounceMs: 1000,
-  ignore: ["*.tmp", ".DS_Store", "**/*.md"],
+  ignore: ["*.tmp", ".DS_Store", "**/*.md", "supermark.config.json", ".supermark.pid", ".supermark-tracker.json"],
   cleanupDigests: true,
   ai: {
     provider: "openai",

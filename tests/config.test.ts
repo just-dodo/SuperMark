@@ -19,7 +19,7 @@ describe("loadConfig", () => {
     expect(config.recursive).toBe(true);
     expect(config.concurrency).toBe(3);
     expect(config.debounceMs).toBe(1000);
-    expect(config.ignore).toEqual(["*.tmp", ".DS_Store", "**/*.md"]);
+    expect(config.ignore).toEqual(["*.tmp", ".DS_Store", "**/*.md", "supermark.config.json", ".supermark.pid", ".supermark-tracker.json"]);
     expect(config.cleanupDigests).toBe(true);
     expect(config.ai.provider).toBe("openai");
     expect(config.ai.model).toBe("gpt-4o");
