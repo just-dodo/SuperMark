@@ -63,13 +63,28 @@ program
   .description("Watch a directory and auto-generate digests for new files")
   .option("-c, --config <path>", "Path to config file")
   .option("-f, --foreground", "Run in foreground instead of as a daemon")
-  .action(async (options: { config?: string; foreground?: boolean }) => {
+  .option("-s, --scan", "Scan and digest existing files on startup")
+  .option("-S, --no-scan", "Skip scanning existing files on startup")
+  .action(async (options: { config?: string; foreground?: boolean; scan?: boolean }) => {
+    // If --scan / --no-scan not explicitly passed, ask interactively
+    if (options.scan === undefined) {
+      const { createInterface } = await import("node:readline");
+      const rl = createInterface({ input: process.stdin, output: process.stdout });
+      const answer = await new Promise<string>((resolve) => {
+        rl.question("Scan and digest existing files? (y/N) ", resolve);
+      });
+      rl.close();
+      options.scan = answer.trim().toLowerCase() === "y";
+    }
+
     if (!options.foreground) {
       const { spawn } = await import("node:child_process");
       const { writeFileSync } = await import("node:fs");
 
-      // Re-run the same command without --daemon
+      // Re-run the same command in foreground, passing scan decision
       const args = [...process.argv.slice(1), "--foreground"];
+      if (options.scan) args.push("--scan");
+      else args.push("--no-scan");
       const child = spawn(process.argv[0], args, {
         detached: true,
         stdio: "ignore",
@@ -150,7 +165,10 @@ program
         }
       },
       onReady: () => {
-        console.log("Watcher ready. Scanning for undigested files...");
+        console.log("Watcher ready.");
+        if (!options.scan) return;
+
+        console.log("Scanning for undigested files...");
 
         // Startup scan: find files not yet up-to-date in tracker
         const scanDir = (dir: string) => {
@@ -232,17 +250,135 @@ program
 
 program
   .command("digest <file>")
-  .description("Generate a digest for a single file")
+  .description("Generate a digest for a single file or URL")
   .option("-c, --config <path>", "Path to config file")
   .action(async (file: string, options: { config?: string }) => {
     const config = loadConfig(options.config);
     const tracker = new DigestTracker(config.outputDir);
-    const fileInfo = getFileInfo(file);
-    const hash = getFileHash(file);
-    const result = await analyze(file, fileInfo.extension, config);
-    const outputPath = writeDigest({ filePath: file, result, config, sourceHash: hash });
-    tracker.track(file, hash, outputPath);
-    console.log(`Digest written: ${outputPath}`);
+
+    const isUrl = file.startsWith("http://") || file.startsWith("https://");
+
+    if (isUrl) {
+      const { analyzeUrl } = await import("../analyzers/url.js");
+      const result = await analyzeUrl(file, config);
+      // Use URL hostname + path as filename
+      let urlName: string;
+      try {
+        const parsed = new URL(file);
+        urlName = (parsed.hostname + parsed.pathname).replace(/[^a-zA-Z0-9.-]/g, "_");
+      } catch {
+        urlName = "url-digest";
+      }
+      const { createHash } = await import("node:crypto");
+      const hash = createHash("sha256").update(file).digest("hex");
+      const outputPath = writeDigest({ filePath: join(config.outputDir, urlName), result, config, sourceHash: hash });
+      tracker.track(file, hash, outputPath);
+      console.log(`Digest written: ${outputPath}`);
+    } else {
+      const fileInfo = getFileInfo(file);
+      const hash = getFileHash(file);
+      const result = await analyze(file, fileInfo.extension, config);
+      const outputPath = writeDigest({ filePath: file, result, config, sourceHash: hash });
+      tracker.track(file, hash, outputPath);
+      console.log(`Digest written: ${outputPath}`);
+    }
+  });
+
+program
+  .command("scan")
+  .description("Scan directory and digest all files (one-shot, no watching)")
+  .option("-c, --config <path>", "Path to config file")
+  .option("--force", "Re-digest all files even if already up-to-date")
+  .action(async (options: { config?: string; force?: boolean }) => {
+    const config = loadConfig(options.config);
+    const queue = createQueue(config);
+    const tracker = new DigestTracker(config.outputDir);
+
+    const IGNORE_FILES = new Set([
+      "supermark.config.json",
+      ".supermark.pid",
+      ".supermark-tracker.json",
+      "package.json",
+      "package-lock.json",
+      "tsconfig.json",
+      "DIGEST_TEMPLATE.md",
+    ]);
+
+    const shouldIgnore = (filePath: string): boolean => {
+      const name = basename(filePath);
+      if (name.endsWith(".md")) return true;
+      if (name.startsWith(".")) return true;
+      if (IGNORE_FILES.has(name)) return true;
+      if (filePath.includes("node_modules")) return true;
+      return false;
+    };
+
+    let queued = 0;
+    let skipped = 0;
+
+    const digestFile = async (filePath: string) => {
+      const fileInfo = getFileInfo(filePath);
+      const hash = getFileHash(filePath);
+      const result = await analyze(filePath, fileInfo.extension, config);
+      const outputPath = writeDigest({ filePath, result, config, sourceHash: hash });
+      tracker.track(filePath, hash, outputPath);
+      console.log(`  Digest written: ${outputPath}`);
+    };
+
+    const scanDir = (dir: string) => {
+      let entries: string[];
+      try {
+        entries = readdirSync(dir);
+      } catch {
+        return;
+      }
+      for (const entry of entries) {
+        const fullPath = join(dir, entry);
+        if (shouldIgnore(fullPath)) continue;
+        const ignored = config.ignore.some((pattern) => {
+          if (pattern.startsWith("*")) {
+            return entry.endsWith(pattern.slice(1));
+          }
+          return entry === pattern;
+        });
+        if (ignored) continue;
+
+        let stat;
+        try {
+          stat = statSync(fullPath);
+        } catch {
+          continue;
+        }
+
+        if (stat.isDirectory()) {
+          if (config.recursive) {
+            scanDir(fullPath);
+          }
+        } else {
+          if (fullPath.startsWith(config.outputDir)) continue;
+          const hash = getFileHash(fullPath);
+          if (options.force || tracker.needsDigestion(fullPath, hash)) {
+            queued++;
+            void enqueue(queue, { filePath: fullPath, addedAt: new Date() }, () => digestFile(fullPath));
+          } else {
+            skipped++;
+          }
+        }
+      }
+    };
+
+    console.log(`Scanning ${config.watchDir}...`);
+    scanDir(config.watchDir);
+
+    if (queued === 0) {
+      console.log("All files are up-to-date. Nothing to digest.");
+      if (skipped > 0) console.log(`  (${skipped} files already digested)`);
+    } else {
+      console.log(`Queued ${queued} files for digestion${skipped > 0 ? ` (${skipped} already up-to-date)` : ""}...`);
+      // Wait for queue to drain
+      await queue.onIdle();
+      console.log("Scan complete.");
+    }
   });
 
 const DEFAULT_DIGEST_TEMPLATE = `# {{fileName}}
