@@ -2,7 +2,8 @@
  * File type detection and metadata utilities.
  */
 
-import { statSync } from "node:fs";
+import { statSync, readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { extname, basename } from "node:path";
 import type { FileInfo } from "../analyzers/types.js";
 
@@ -17,6 +18,11 @@ export function getFileInfo(filePath: string): FileInfo {
     sizeBytes: stats.size,
     modifiedAt: stats.mtime,
   };
+}
+
+export function getFileHash(filePath: string): string {
+  const content = readFileSync(filePath);
+  return createHash("sha256").update(content).digest("hex");
 }
 
 export function isHiddenFile(filePath: string): boolean {

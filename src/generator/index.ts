@@ -2,9 +2,9 @@
  * Markdown digest generator — converts analysis results to markdown files.
  */
 
-import { writeFileSync, mkdirSync } from "node:fs";
+import { writeFileSync, mkdirSync, existsSync, unlinkSync } from "node:fs";
 import { join, basename, extname } from "node:path";
-import { getFileInfo, formatFileSize } from "../utils/file.js";
+import { getFileInfo, formatFileSize, getFileHash } from "../utils/file.js";
 import type { AnalysisResult, Config } from "../analyzers/types.js";
 
 const extensionToType: Record<string, string> = {
@@ -27,16 +27,18 @@ export interface DigestOptions {
   filePath: string;
   result: AnalysisResult;
   config: Config;
+  sourceHash?: string;
 }
 
 export function generateDigest(options: DigestOptions): string {
-  const { filePath, result } = options;
+  const { filePath, result, sourceHash } = options;
   const fileName = basename(filePath);
   const now = new Date().toISOString();
   const fileInfo = getFileInfo(filePath);
   const fileType = extensionToType[fileInfo.extension] || fileInfo.extension || "Unknown";
   const formattedSize = formatFileSize(fileInfo.sizeBytes);
   const modifiedDate = fileInfo.modifiedAt.toISOString();
+  const hash = sourceHash ?? getFileHash(filePath);
 
   const lines: string[] = [
     `# ${fileName}`,
@@ -53,6 +55,7 @@ export function generateDigest(options: DigestOptions): string {
     `- **Size**: ${formattedSize}`,
     `- **Modified**: ${modifiedDate}`,
     `- **Digested**: ${now}`,
+    `- **Hash**: ${hash}`,
     "",
     "## Content Analysis",
     "",
@@ -96,4 +99,12 @@ export function writeDigest(options: DigestOptions): string {
 
   writeFileSync(outputPath, markdown, "utf-8");
   return outputPath;
+}
+
+export function deleteDigest(digestPath: string): boolean {
+  if (existsSync(digestPath)) {
+    unlinkSync(digestPath);
+    return true;
+  }
+  return false;
 }
