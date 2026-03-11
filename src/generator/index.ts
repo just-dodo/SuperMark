@@ -4,7 +4,24 @@
 
 import { writeFileSync, mkdirSync } from "node:fs";
 import { join, basename, extname } from "node:path";
+import { getFileInfo, formatFileSize } from "../utils/file.js";
 import type { AnalysisResult, Config } from "../analyzers/types.js";
+
+const extensionToType: Record<string, string> = {
+  ".ts": "TypeScript", ".tsx": "TypeScript React", ".js": "JavaScript",
+  ".jsx": "JavaScript React", ".py": "Python", ".rs": "Rust",
+  ".go": "Go", ".java": "Java", ".c": "C", ".cpp": "C++",
+  ".rb": "Ruby", ".php": "PHP", ".swift": "Swift", ".kt": "Kotlin",
+  ".html": "HTML", ".css": "CSS", ".md": "Markdown", ".txt": "Plain Text",
+  ".pdf": "PDF Document", ".docx": "Word Document", ".doc": "Word Document",
+  ".pptx": "PowerPoint", ".ppt": "PowerPoint",
+  ".png": "PNG Image", ".jpg": "JPEG Image", ".jpeg": "JPEG Image",
+  ".gif": "GIF Image", ".svg": "SVG Image", ".webp": "WebP Image",
+  ".mp3": "MP3 Audio", ".wav": "WAV Audio", ".m4a": "M4A Audio",
+  ".mp4": "MP4 Video", ".mov": "QuickTime Video", ".avi": "AVI Video",
+  ".csv": "CSV Data", ".json": "JSON", ".yaml": "YAML", ".yml": "YAML",
+  ".url": "URL Bookmark", ".webloc": "URL Bookmark",
+};
 
 export interface DigestOptions {
   filePath: string;
@@ -16,6 +33,10 @@ export function generateDigest(options: DigestOptions): string {
   const { filePath, result } = options;
   const fileName = basename(filePath);
   const now = new Date().toISOString();
+  const fileInfo = getFileInfo(filePath);
+  const fileType = extensionToType[fileInfo.extension] || fileInfo.extension || "Unknown";
+  const formattedSize = formatFileSize(fileInfo.sizeBytes);
+  const modifiedDate = fileInfo.modifiedAt.toISOString();
 
   const lines: string[] = [
     `# ${fileName}`,
@@ -25,6 +46,13 @@ export function generateDigest(options: DigestOptions): string {
     "## Summary",
     "",
     result.summary || "_No summary available._",
+    "",
+    "## File Info",
+    "",
+    `- **Type**: ${fileType}`,
+    `- **Size**: ${formattedSize}`,
+    `- **Modified**: ${modifiedDate}`,
+    `- **Digested**: ${now}`,
     "",
     "## Content Analysis",
     "",
@@ -63,8 +91,8 @@ export function writeDigest(options: DigestOptions): string {
 
   mkdirSync(config.outputDir, { recursive: true });
 
-  const baseName = basename(filePath, extname(filePath));
-  const outputPath = join(config.outputDir, `${baseName}.md`);
+  const fileName = basename(filePath);
+  const outputPath = join(config.outputDir, `${fileName}.md`);
 
   writeFileSync(outputPath, markdown, "utf-8");
   return outputPath;

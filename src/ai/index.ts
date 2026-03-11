@@ -24,6 +24,21 @@ export async function summarize(
   return response.content;
 }
 
+export async function callLlmForAnalysis(
+  content: string,
+  systemPrompt: string,
+  config: Config,
+): Promise<string> {
+  const response = await callLlm(
+    {
+      prompt: content,
+      systemPrompt,
+    },
+    config,
+  );
+  return response.content;
+}
+
 export {
   callLlm,
   transcribe,
