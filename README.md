@@ -58,15 +58,20 @@ npm link
 # 1. Set your API key
 export OPENAI_API_KEY="sk-..."
 
-# 2. Initialize a SuperMark project (creates config + directories)
+# 2. Initialize a SuperMark project (creates config in current directory)
 supermark init
 
-# 3. Start watching
+# 3. Start watching the current directory
 supermark watch
 
-# 4. Drop files into ./inbox — digests appear in ./digests
-cp my-report.pdf ./inbox/
-# => ./digests/my-report.pdf.md created automatically
+# 4. Drop files in — digests appear alongside them as <filename>.md
+cp my-report.pdf .
+# => ./my-report.pdf.md created automatically
+
+# Or run as a background daemon
+supermark watch --daemon
+# => SuperMark daemon started (PID: 12345)
+# => Stop with: supermark stop
 
 # Or digest a single file directly
 supermark digest ./some-file.py
@@ -79,8 +84,10 @@ supermark digest https://example.com/article
 
 | Command | Description |
 |---------|-------------|
-| `supermark init` | Create default config, inbox, and digests directories |
+| `supermark init` | Create default config in the current directory |
 | `supermark watch` | Start watching for new/changed files |
+| `supermark watch -d` | Start watcher as a background daemon |
+| `supermark stop` | Stop the background daemon |
 | `supermark digest <file\|url>` | Digest a single file or URL |
 | `supermark status` | Show current configuration and status |
 

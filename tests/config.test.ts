@@ -14,12 +14,12 @@ afterEach(() => {
 describe("loadConfig", () => {
   it("returns default config when no file exists", () => {
     const config = loadConfig("/tmp/nonexistent-supermark-config.json");
-    expect(config.watchDir).toBe("./inbox");
-    expect(config.outputDir).toBe("./digests");
+    expect(config.watchDir).toBe(".");
+    expect(config.outputDir).toBe(".");
     expect(config.recursive).toBe(true);
     expect(config.concurrency).toBe(3);
     expect(config.debounceMs).toBe(1000);
-    expect(config.ignore).toEqual(["*.tmp", ".DS_Store"]);
+    expect(config.ignore).toEqual(["*.tmp", ".DS_Store", "*.md"]);
     expect(config.cleanupDigests).toBe(true);
     expect(config.ai.provider).toBe("openai");
     expect(config.ai.model).toBe("gpt-4o");
@@ -36,7 +36,7 @@ describe("loadConfig", () => {
     expect(config.watchDir).toBe("./my-inbox");
     expect(config.concurrency).toBe(5);
     // Defaults preserved
-    expect(config.outputDir).toBe("./digests");
+    expect(config.outputDir).toBe(".");
     expect(config.recursive).toBe(true);
   });
 

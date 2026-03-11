@@ -7,12 +7,12 @@ import { resolve } from "node:path";
 import type { Config } from "../analyzers/types.js";
 
 const DEFAULT_CONFIG: Config = {
-  watchDir: "./inbox",
-  outputDir: "./digests",
+  watchDir: ".",
+  outputDir: ".",
   recursive: true,
   concurrency: 3,
   debounceMs: 1000,
-  ignore: ["*.tmp", ".DS_Store"],
+  ignore: ["*.tmp", ".DS_Store", "*.md"],
   cleanupDigests: true,
   ai: {
     provider: "openai",

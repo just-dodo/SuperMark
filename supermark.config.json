@@ -1,10 +1,10 @@
 {
-  "watchDir": "./inbox",
-  "outputDir": "./digests",
+  "watchDir": ".",
+  "outputDir": ".",
   "recursive": true,
   "concurrency": 3,
   "debounceMs": 1000,
-  "ignore": ["*.tmp", ".DS_Store"],
+  "ignore": ["*.tmp", ".DS_Store", "*.md"],
   "cleanupDigests": true,
   "ai": {
     "provider": "openai",

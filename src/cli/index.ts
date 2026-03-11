@@ -26,7 +26,27 @@ program
   .command("watch")
   .description("Watch a directory and auto-generate digests for new files")
   .option("-c, --config <path>", "Path to config file")
-  .action(async (options: { config?: string }) => {
+  .option("-d, --daemon", "Run in background as a daemon process")
+  .action(async (options: { config?: string; daemon?: boolean }) => {
+    if (options.daemon) {
+      const { spawn } = await import("node:child_process");
+      const { writeFileSync } = await import("node:fs");
+
+      // Re-run the same command without --daemon
+      const args = process.argv.slice(1).filter(a => a !== "--daemon" && a !== "-d");
+      const child = spawn(process.argv[0], args, {
+        detached: true,
+        stdio: "ignore",
+      });
+      child.unref();
+
+      writeFileSync(".supermark.pid", String(child.pid));
+      console.log(`SuperMark daemon started (PID: ${child.pid})`);
+      console.log("  PID file: .supermark.pid");
+      console.log("  Stop with: supermark stop");
+      process.exit(0);
+    }
+
     const config = loadConfig(options.config);
     const queue = createQueue(config);
     const tracker = new DigestTracker(config.outputDir);
@@ -78,6 +98,8 @@ program
             const fullPath = join(dir, entry);
             // Skip hidden files/dirs
             if (entry.startsWith(".")) continue;
+            // Skip .md files (digests live in same dir as sources)
+            if (entry.endsWith(".md")) continue;
             // Skip ignore patterns (basic glob check)
             const ignored = config.ignore.some((pattern) => {
               // Simple wildcard match for *.ext patterns
@@ -124,6 +146,27 @@ program
   });
 
 program
+  .command("stop")
+  .description("Stop the background SuperMark daemon")
+  .action(async () => {
+    const { readFileSync, unlinkSync, existsSync } = await import("node:fs");
+    const pidFile = ".supermark.pid";
+    if (!existsSync(pidFile)) {
+      console.log("No running SuperMark daemon found.");
+      return;
+    }
+    const pid = parseInt(readFileSync(pidFile, "utf-8").trim(), 10);
+    try {
+      process.kill(pid);
+      unlinkSync(pidFile);
+      console.log(`SuperMark daemon stopped (PID: ${pid})`);
+    } catch {
+      unlinkSync(pidFile);
+      console.log(`Process ${pid} not found. Cleaned up PID file.`);
+    }
+  });
+
+program
   .command("digest <file>")
   .description("Generate a digest for a single file")
   .option("-c, --config <path>", "Path to config file")
@@ -142,12 +185,10 @@ program
   .command("init")
   .description("Initialize a supermark project with default config")
   .action(async () => {
-    const { writeFileSync, mkdirSync } = await import("node:fs");
+    const { writeFileSync } = await import("node:fs");
     const { DEFAULT_CONFIG } = await import("../config/index.js");
 
     writeFileSync("supermark.config.json", JSON.stringify(DEFAULT_CONFIG, null, 2) + "\n");
-    mkdirSync(DEFAULT_CONFIG.watchDir, { recursive: true });
-    mkdirSync(DEFAULT_CONFIG.outputDir, { recursive: true });
     console.log("Initialized supermark project.");
     console.log(`  Config: supermark.config.json`);
     console.log(`  Watch dir: ${DEFAULT_CONFIG.watchDir}`);
