@@ -15,12 +15,48 @@ import { writeDigest } from "../generator/index.js";
 import { getFileInfo, getFileHash } from "../utils/file.js";
 import { DigestTracker } from "../digest-tracker.js";
 
+function showWelcome(): void {
+  const hasApiKey = !!process.env.OPENAI_API_KEY;
+  console.log("");
+  console.log("\x1b[32m+--------------------------------------+\x1b[0m");
+  console.log("\x1b[32m|\x1b[0m  \x1b[1mSuperMark\x1b[0m — AI file digestion       \x1b[32m|\x1b[0m");
+  console.log("\x1b[32m+--------------------------------------+\x1b[0m");
+  console.log("");
+  if (!hasApiKey) {
+    console.log("  \x1b[33mAPI key not found.\x1b[0m Set up to get started:");
+    console.log("");
+    console.log("  1. Set your API key:");
+    console.log("     \x1b[36mexport OPENAI_API_KEY=\"sk-...\"\x1b[0m");
+    console.log("");
+    console.log("  2. Start watching:");
+    console.log("     \x1b[36msupermark watch\x1b[0m");
+    console.log("");
+    console.log("  \x1b[2mOptional: export GEMINI_API_KEY=\"AI...\" (for video)\x1b[0m");
+    console.log("");
+    console.log("  \x1b[2mGet keys:\x1b[0m");
+    console.log("  \x1b[2m  OpenAI: https://platform.openai.com/api-keys\x1b[0m");
+    console.log("  \x1b[2m  Gemini: https://aistudio.google.com/apikey\x1b[0m");
+    console.log("");
+  } else {
+    console.log("  \x1b[32mAPI key detected.\x1b[0m Ready to go!");
+    console.log("");
+    console.log("  \x1b[36msupermark watch\x1b[0m       Start watching (daemon)");
+    console.log("  \x1b[36msupermark watch -f\x1b[0m    Start watching (foreground)");
+    console.log("  \x1b[36msupermark digest <file>\x1b[0m  Digest a single file");
+    console.log("  \x1b[36msupermark stop\x1b[0m        Stop the daemon");
+    console.log("");
+  }
+}
+
 const program = new Command();
 
 program
   .name("supermark")
   .description("AI-powered file digestion system — auto-generates markdown documentation for every file")
-  .version("0.1.0");
+  .version("0.1.1")
+  .action(() => {
+    showWelcome();
+  });
 
 program
   .command("watch")
