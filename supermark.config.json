@@ -1,0 +1,14 @@
+{
+  "watchDir": "./inbox",
+  "outputDir": "./digests",
+  "recursive": true,
+  "concurrency": 3,
+  "debounceMs": 1000,
+  "ignore": ["*.tmp", ".DS_Store"],
+  "cleanupDigests": true,
+  "ai": {
+    "provider": "openai",
+    "model": "gpt-4o",
+    "whisperModel": "whisper-1"
+  }
+}
